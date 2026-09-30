@@ -10,8 +10,15 @@
 | :--- | :--- | :---: | :--- |
 | **Datacom DmOS** | `dmos` | **OK** | Interfaces físicas, VLANs, L3, LAGs, IPs (v4/v6), Transceivers, VRRP, VPWS/VPLS, LLDP. |
 | **Mikrotik RouterOS** | `routeros` | **OK** | Interfaces físicas, VLANs, Bridges, LAGs (Bonding), IPs (estáticos/dinâmicos/IPv6), VRRP, VPLS, LLDP, **Túneis VPN (`/vpn/tunnels/`)** (WireGuard, L2TP, PPTP, OpenVPN, SSTP). |
-| **Juniper JunOS** | `junos` | 🟡 *Pendente* | Em desenvolvimento / Planejado. |
-| **Huawei VRP** | `huawei_vrp` | 🟡 *Pendente* | Em desenvolvimento / Planejado. |
+| **Huawei VRP** | `huawei_vrp` | **OK** | Roteadores (AR/NE), switches (S/CE) e BNG/BRAS: interfaces físicas, subinterfaces (`vlan-type dot1q`), Vlanif/LoopBack/Tunnel/Virtual-*, Eth-Trunk (LAG) e membros (`eth-trunk N`), VLANs (`vlan batch` e `vlan N` + `description`), portas access/trunk/hybrid, IPs IPv4 (máscara decimal → CIDR) e IPv6, VRRP, **VPWS (`mpls l2vc`)**, **VPLS (`vsi` + `l2 binding vsi`)** e **QinQ de assinante BNG (`user-vlan ... qinq ...`)**, LLDP. |
+| **Juniper (JunOS)** | `junos` | 🟡 *Pendente* | Em desenvolvimento / Planejado. |
+| **Fortinet (FortiOS)** | `fortios` | 🟡 *Pendente* | Em desenvolvimento / Planejado. |
+| **A10 (AcOS)** | `acos` | 🟡 *Pendente* | Em desenvolvimento / Planejado. |
+| **Hillstone (StoneOS)** | `stoneos` | 🟡 *Pendente* | Em desenvolvimento / Planejado. |
+| **Cisco (IOS, IOS XE, IOS XR, NX-OS, ASA-OS)** | `cisco_*` | 🟡 *Pendente* | Em desenvolvimento / Planejado. |
+| **Nokia (TimOS, SR Linux)** | `nokia_*` | 🟡 *Pendente* | Em desenvolvimento / Planejado. |
+| **Dell (OS10)** | `dell_os10` | 🟡 *Pendente* | Em desenvolvimento / Planejado. |
+| **Extreme Networks (ExtremeOS / EXOS)** | `exos` | 🟡 *Pendente* | Em desenvolvimento / Planejado. |
 
 ---
 
@@ -51,8 +58,25 @@
 ### 4. ⚙️ Recursos Avançados de Execução
 - **Modo Simulação (`--dry-run`)**: Executa o parsing dos dados e exibe o resumo completo sem aplicar nenhuma alteração no NetBox.
 - **Sincronização Modular (`--sync-modules`)**: Permite selecionar exatamente quais módulos sincronizar (ex: `--sync-modules vlans,interfaces,ips` ou `all`).
+- **Modo de Depuração (`--debug`)**: Exibe logs detalhados durante a coleta, parsing e comunicação com a API do NetBox.
 - **Opções SSL e Segurança (`--insecure` / `DISABLE_SSL_VERIFY`)**: Suporte a ambientes com certificados SSL auto-assinados.
 - **Relatório Final da Execução**: Exibe um resumo formatado em tabela indicando o status de cada host processado e totais de sucesso/falha.
+
+---
+
+## 📌 Compatibilidade de API e Versão NetBox
+
+- **Versões da API**: Testado e compatível com as versões **v1 e v2** da API REST.
+- **Versão do NetBox**: Testado no **NetBox 4.6.8+**.
+
+---
+
+## 🤝 Contribuição & Suporte
+
+Contribuições são super bem-vindas! Se você encontrou algum problema ou tem sugestões de melhoria:
+
+- Sinta-se à vontade para abrir uma Issue descrevendo o bug ou a ideia de funcionalidade.
+- Envie um **Pull Request (PR)** com correções, novos drivers de fabricante ou novas funcionalidades.
 
 ---
 
@@ -67,6 +91,8 @@ netboxsync/
 │   ├── base.py               # Classe Abstrata Base (BaseDeviceDriver)
 │   ├── registry.py           # Decorator e Factory (register_driver, get_driver)
 │   ├── datacom_dmos.py       # Driver oficial para Datacom DmOS
+│   ├── mikrotik_routeros.py  # Driver oficial para Mikrotik RouterOS
+│   ├── huawei_vrp.py         # Driver oficial para Huawei VRP (Router/Switch/BNG-BRAS)
 │   └── template_driver.py    # Boilerplate documentado para novos fabricantes
 ├── netbox_sync/
 │   └── sync_engine.py        # Motor de sincronização com a API do NetBox (pynetbox)
@@ -98,6 +124,33 @@ netboxsync/
 
 ---
 
+> [!NOTE]
+> **Observação**: É recomendativo que o **Device Type** (`device-type`) já esteja previamente cadastrado no NetBox antes de realizar a sincronização.
+
+## 📖 Parâmetros e Opções da CLI (`--help`)
+
+| Parâmetro / Flag | Abreviação | Descrição | Valor Padrão / Env |
+| :--- | :---: | :--- | :--- |
+| `--help` | `-h` | Exibe a mensagem de ajuda com todas as opções. | - |
+| `--driver` | `-d-driver` | Nome/slug do driver de fabricante/SO (`dmos`, `routeros`, etc.). | `dmos` |
+| `--file` | `-f` | Caminho para arquivo com a saída de configurações locais. | - |
+| `--host` | `-H` | Endereço IP ou FQDN do equipamento para conectar via SSH. | - |
+| `--hosts-file` | `-F` | Arquivo texto contendo lista de IPs/Hosts (um por linha). | - |
+| `--username` | `-u` | Usuário SSH do equipamento. | `.env` (`SSH_USER`) |
+| `--password` | `-p` | Senha SSH do equipamento. | `.env` (`SSH_PASS`) |
+| `--port` | `-P` | Porta SSH remota. | `22` / `SSH_PORT` |
+| `--debug` | `-d` | Ativa o modo de depuração com logs SSH/API detalhados. | `False` |
+| `--url` | - | URL do servidor NetBox. | `.env` (`NETBOX_URL`) |
+| `--token` | - | Token de autenticação da API do NetBox. | `.env` (`NETBOX_TOKEN`) |
+| `--site` | `-s` | Nome/Slug do Site (POP) no NetBox. | Coleta automática |
+| `--role` | `-r` | Device Role no NetBox (ex: `SWITCH`, `Router`). | `SWITCH` |
+| `--device-type` | `-m`, `--model` | Modelo / Device Type no NetBox. | Coleta automática |
+| `--insecure` | `-k` | Ignora a verificação de certificado SSL (auto-assinado). | `False` |
+| `--dry-run` | - | Executa a simulação sem realizar alterações no NetBox. | `False` |
+| `--sync-modules` | `-m-sync` | Módulos a sincronizar (`vlans`, `interfaces`, `ips`, `vrrp`, `l2vpn`, `cables`, `transceivers`, `vpn_tunnels`) ou `all`. | `all` |
+
+---
+
 ## 💻 Exemplos de Uso
 
 ### 1. Ler arquivo local em modo Simulação (Dry-Run)
@@ -124,6 +177,51 @@ python3 main.py --host 192.168.1.1 -P 2269 -u admin -p MinhaSenha --driver route
 ```bash
 python3 main.py --host 10.0.0.1 -u admin --driver routeros --sync-modules ips,vpn_tunnels
 ```
+
+### 6. Sincronizar equipamento Huawei VRP a partir de arquivo local (Dry-Run)
+```bash
+python3 main.py --file config_huawei_switch.txt --driver huawei_vrp \
+  --device-type "S5731-H48T4XC" --site POP-01 --role SWITCH --dry-run
+```
+
+### 7. Sincronizar Huawei VRP (roteador/BNG) via SSH
+```bash
+python3 main.py --host 10.0.0.1 -u admin -p MinhaSenha --driver huawei_vrp \
+  --device-type "NetEngine 8000 M8" --site POP-01 --role ROUTER
+```
+
+> **Dica (Huawei):** informe sempre `--device-type`/`--model` com o modelo real do
+> equipamento (ex: `NetEngine 8000 M8`, `S5731-H48T4XC`), pois o arquivo de
+> `display current-configuration` não contém o modelo de hardware do chassi.
+
+---
+
+## 🇨🇳 Notas do Driver Huawei VRP (`huawei_vrp`)
+
+- **Coleta SSH**: `display current-configuration`, `display version`, `display esn`,
+  `display device` e `display lldp neighbor brief` (paginação desabilitada com
+  `screen-length 0 temporary`). O parser também aceita apenas o arquivo local com a
+  saída de `display current-configuration`.
+- **Interfaces**: portas físicas (`GigabitEthernet`, `XGigabitEthernet`, `10GE`,
+  `25GE`, `40GE`, `100GE`, `MEth`) vão para interfaces físicas; `Vlanif`, `LoopBack`,
+  `Tunnel`, `Virtual-Template`, `Virtual-Ethernet` e subinterfaces (`Eth-Trunk4.2`)
+  vão para interfaces L3, com o vínculo de `parent` (ex: `Eth-Trunk4.2` → `Eth-Trunk4`).
+- **LAGs**: os `Eth-Trunk` são mapeados como LAG e os membros são descobertos pelo
+  comando `eth-trunk N` presente nas portas físicas.
+- **VLANs**: `vlan batch` (aceita faixas `N to M`) e blocos `vlan N` com `description`.
+  Portas `access` (`port default vlan`), `trunk` (`port trunk allow-pass vlan`, inclusive
+  múltiplas linhas) e `hybrid` (pvid/tagged/untagged) alimentam VLANs tagged/untagged.
+- **IPs**: máscara decimal do VRP (`ip address 10.0.0.1 255.255.255.252`) é convertida
+  para CIDR (`10.0.0.1/30`), incluindo endereços secundários (`sub`) e IPv6.
+- **L2VPN**: `mpls l2vc <peer> <vc-id>` vira **VPWS** (PW-ID = VC-ID, terminado na VLAN
+  da `Vlanif`); blocos `vsi <NOME> [static]` + `l2 binding vsi <NOME>` viram **VPLS**.
+  Nomes de L2VPN repetidos no mesmo equipamento recebem o sufixo da interface para
+  garantir unicidade.
+- **BNG/BRAS**: interfaces de assinante (`user-vlan <ini> <fim> [qinq <S-VLAN>]`) são
+  traduzidas para o modelo QinQ do NetBox (S-VLAN + C-VLANs) e para uma L2VPN do tipo
+  VPLS, o mesmo modelo usado nos OLTs. As VLANs também são cadastradas no IPAM.
+- **Não suportado (ainda)**: transceivers ópticos (`display transceiver`) e o
+  detalhamento de túneis MPLS-TE. Interfaces `NULL0` são ignoradas.
 
 ---
 
